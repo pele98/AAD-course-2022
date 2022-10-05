@@ -1,24 +1,46 @@
 require('dotenv').config();
 const { ApolloServer, gql } = require('apollo-server-express');
 const express = require('express');
-const port = process.env.PORT || 5000;
-const DB_HOST = process.env.DB_HOST;
 const db = require('./db.cjs');
 const models = require('./models/index.cjs');
 const typeDefs = require('./schema.cjs');
-
 const resolvers = require('./resolvers/index.cjs');
+
+const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
+const cors = require('cors');
+const depthLimit = require('graphql-depth-limit');
+const { createComplexityLimitRule } = require('graphql-validation-complexity');
+
+const port = process.env.PORT || 7000;
+const DB_HOST = process.env.DB_HOST;
 
 const app = express();
 
+app.use(helmet());
+app.use(cors());
+
 db.connect(DB_HOST);
+
+const getUser = token => {
+  if (token) {
+    try {
+      return jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      throw new Error('Session invalid');
+    }
+  }
+};
 
 async function startServer(app) {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: () => {
-      return { models };
+    validationRules: [depthLimit(5), createComplexityLimitRule(1000)],
+    context: ({ req }) => {
+      const token = req.headers.authorization;
+      const user = getUser(token);
+      return { models, user };
     }
   });
   await server.start();

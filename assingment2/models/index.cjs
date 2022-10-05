@@ -1,7 +1,9 @@
 const Note = require('./note.cjs');
+const User = require('./user.cjs');
 
 const models = {
-  Note
+  Note,
+  User
 };
 
 module.exports = models;
