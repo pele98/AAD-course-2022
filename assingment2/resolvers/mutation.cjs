@@ -25,7 +25,7 @@ module.exports = {
       return false;
     }
   },
-  updateNote: async (parent, { content, id }, { models, user }) => {
+  updateNote: async (parent, { content, id, disabled }, { models, user }) => {
     if (!user) {
       throw new AuthenticationError('You must be signed in to update a note');
     }
@@ -41,8 +41,29 @@ module.exports = {
       {
         $set: {
           content,
-          author,
           disabled
+        }
+      },
+      {
+        new: true
+      }
+    );
+  },
+  toggleNoteStatus: async (parent, { id }, { models, user }) => {
+    if (!user) {
+      throw new AuthenticationError('You must be signed in to update a note');
+    }
+    const note = await models.Note.findById(id);
+    if (note && String(note.author) !== user.id) {
+      throw new ForbiddenError("You don't have permissions to update the note");
+    }
+    return await models.Note.findOneAndUpdate(
+      {
+        _id: id
+      },
+      {
+        $set: {
+          disabled: !note.disabled
         }
       },
       {
@@ -54,12 +75,13 @@ module.exports = {
     if (!user) {
       throw new AuthenticationError('You must be signed in to create a note');
     }
-    return await models.Note.create({
+    const result = await models.Note.create({
       content: args.content,
       author: mongoose.Types.ObjectId(user.id),
       favoriteCount: 0,
-      disabled: false,
+      disabled: args.disabled,
     });
+    return result;
   },
   toggleFavorite: async (parent, { id }, { models, user }) => {
     if (!user) {

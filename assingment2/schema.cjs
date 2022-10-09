@@ -4,9 +4,9 @@ module.exports = gql`
 scalar DateTime
 
 type Note {
-  id: ID
+  id: String!
   content: String!
-  author: String!
+  author: User!
   disabled: Boolean!
   favoriteCount: Int!
   favoritedBy: [User]
@@ -15,7 +15,7 @@ type Note {
 }
 
 type User {
-  id: ID!
+  id: String!
   username: String!
   email: String!
   avatar: String
@@ -41,10 +41,11 @@ type Query {
 }
 
 type Mutation {
-  newNote(content: String!, author: String!, disabled: Boolean!): Note!
-  updateNote(id: ID!, content: String, author: String, disabled: Boolean): Note!
+  newNote(content: String!, disabled: Boolean!): Note
+  updateNote(id: ID!, content: String, disabled: Boolean): Note!
   deleteNote(id: ID!): Boolean!
   toggleFavorite(id: ID!): Note!
+  toggleNoteStatus(id: ID!): Note!
   signUp(username: String!, email: String!, password: String!): String!
   signIn(username: String, email: String, password: String!): String!
 }
